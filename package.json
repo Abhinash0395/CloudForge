@@ -1,0 +1,29 @@
+{
+  "name": "risklens-ai",
+  "version": "1.0.0",
+  "description": "RiskLens AI - Predict. Understand. Decide. Enterprise AI Decision-Intelligence Platform.",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,magenta\" \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "start": "npm run start --workspace=server",
+    "seed": "npm run seed --workspace=server",
+    "install:all": "npm install && npm install --workspace=server && npm install --workspace=client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "ai",
+    "decision-intelligence",
+    "risk-prediction",
+    "explainable-ai",
+    "machine-learning"
+  ],
+  "author": "RiskLens AI Team",
+  "license": "MIT"
+}

@@ -1,0 +1,251 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  role      String     @default("Risk Intelligence Lead")
+  createdAt DateTime   @default(now())
+  analyses  Analysis[]
+  auditLogs AuditLog[]
+}
+
+model Analysis {
+  id              String           @id @default(uuid())
+  userId          String?
+  user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  category        String           // Infrastructure, Environmental, Operational, Resource, Financial, Healthcare, etc.
+  inputType       String           // STRUCTURED, TEXT, IMAGE, SCENARIO
+  status          String           @default("COMPLETED") // PENDING, PROCESSING, COMPLETED, FAILED
+  riskScore       Float            // 0 - 100
+  riskLevel       String           // LOW, MODERATE, HIGH, CRITICAL
+  confidence      Float            // 0 - 1.0 (e.g. 0.88)
+  prediction      String           // Concise prediction statement
+  summary         String           // High-level AI Executive Summary
+  timeHorizon     String           @default("30 Days") // 24h, 7 Days, 30 Days, 90 Days
+  tags            String?          // JSON array or comma separated
+  mode            String           @default("DEMO") // "LIVE" | "DEMO"
+  location        String?          // e.g. "Gorakhpur, Uttar Pradesh, India"
+  latitude        Float?
+  longitude       Float?
+  dataQuality     String           @default("HIGH") // HIGH, MODERATE, LOW
+  dataFreshness   String?          // Human readable freshness e.g. "2 mins ago"
+  calculationMethod String?        // Transparent methodology description
+  sourcesCited    String?          // JSON array of citation objects
+  limitations     String?          // Boundary conditions and caveats
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  inputData       InputData?
+  riskFactors     RiskFactor[]
+  predictions     Prediction[]
+  recommendations Recommendation[]
+  insights        Insight[]
+  imageAnalysis   ImageAnalysis?
+  reports         Report[]
+  dataPoints      DataPoint[]
+  conversations   Conversation[]
+
+  @@index([category])
+  @@index([riskLevel])
+  @@index([createdAt])
+}
+
+model InputData {
+  id             String    @id @default(uuid())
+  analysisId     String    @unique
+  analysis       Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  rawInput       String?
+  structuredData String?   // JSON representation of numerical parameters & sensors
+  source         String    @default("Direct User Input")
+  createdAt      DateTime  @default(now())
+}
+
+model RiskFactor {
+  id           String    @id @default(uuid())
+  analysisId   String
+  analysis     Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  name         String
+  category     String    @default("Operational")
+  contribution Float     // Percentage weight e.g. 28.5%
+  severity     String    // LOW, MEDIUM, HIGH, CRITICAL
+  explanation  String
+  trend        String?   // INCREASING, STABLE, DECREASING
+  metricValue  String?   // e.g. "89.4°C" or "94.2% Load"
+
+  @@index([analysisId])
+}
+
+model Prediction {
+  id                  String    @id @default(uuid())
+  analysisId          String
+  analysis            Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  value               String    // e.g. "Failure Probability Spike"
+  probability         Float     // 0.0 - 1.0 e.g. 0.84
+  confidence          Float     // 0.0 - 1.0 e.g. 0.89
+  timeHorizon         String    // "Next 14 Days"
+  baselineComparison  Float?    // Delta from normal e.g. +14.2%
+  trendDirection      String    @default("INCREASING") // INCREASING, DECREASING, STABLE
+  forecastPoints      String?   // JSON array of time-series forecasted points for charts
+
+  @@index([analysisId])
+}
+
+model Recommendation {
+  id             String    @id @default(uuid())
+  analysisId     String
+  analysis       Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  priority       String    // PRIORITY 1, PRIORITY 2, PRIORITY 3
+  expectedImpact String    // e.g. "-24% Risk Reduction", "+18% Reliability"
+  urgency        String    // Immediate, Within 48h, Within 7 Days, Routine
+  status         String    @default("PENDING") // PENDING, ACCEPTED, DISMISSED, SAVED, EXECUTING
+  reasoning      String?
+  orderIndex     Int       @default(0)
+
+  @@index([analysisId])
+}
+
+model Insight {
+  id                String    @id @default(uuid())
+  analysisId        String?
+  analysis          Analysis? @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  type              String    // ANOMALY, TREND, RISK_CHANGE, PATTERN, RECOMMENDATION
+  severity          String    // CRITICAL, HIGH, MEDIUM, LOW
+  title             String
+  description       String
+  affectedFactor    String?
+  recommendedAction String?
+  createdAt         DateTime  @default(now())
+
+  @@index([severity])
+  @@index([type])
+}
+
+model ImageAnalysis {
+  id              String    @id @default(uuid())
+  analysisId      String?   @unique
+  analysis        Analysis? @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  imageUrl        String
+  imageName       String?
+  objects         String    // JSON array of detected bounding objects
+  anomalies       String    // JSON array of visual anomalies detected
+  confidence      Float     // 0 - 1.0
+  visualRiskScore Float     // 0 - 100
+  insights        String?   // Explanation of visual findings
+  createdAt       DateTime  @default(now())
+}
+
+model Scenario {
+  id           String    @id @default(uuid())
+  key          String    @unique // e.g. "infrastructure-risk", "environmental-monitoring"
+  name         String
+  category     String
+  description  String
+  icon         String    @default("Activity")
+  demoData     String    // JSON stringified demo structured input parameters
+  baselineRisk Float     @default(50)
+  tags         String?
+  createdAt    DateTime  @default(now())
+}
+
+model Report {
+  id          String    @id @default(uuid())
+  analysisId  String
+  analysis    Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  title       String
+  format      String    @default("EXECUTIVE_PDF")
+  content     String    // JSON compiled report data
+  status      String    @default("GENERATED")
+  generatedBy String    @default("RiskLens Autonomous Engine")
+  createdAt   DateTime  @default(now())
+
+  @@index([analysisId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  details   String?
+  timestamp DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   // RISK_ALERT, PREDICTION_UPDATE, DECISION_ACTION, SYSTEM
+  severity  String   @default("INFO") // CRITICAL, WARNING, INFO, SUCCESS
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model DataSource {
+  id              String   @id @default(uuid())
+  key             String   @unique // e.g. "open-meteo-weather", "open-meteo-geocoding"
+  name            String
+  category        String   // "Meteorological", "Geospatial", "Air Quality", "Satellite Vision"
+  endpoint        String
+  license         String   // e.g. "Open Database License (ODbL) / CC BY 4.0"
+  updateFrequency String   // e.g. "Hourly (15-min cadence)"
+  status          String   @default("ACTIVE") // ACTIVE, DEGRADED, OFFLINE
+  latencyMs       Int      @default(120)
+  lastChecked     DateTime @default(now())
+  details         String?  // Description of parameters provided
+  dataPoints      DataPoint[]
+}
+
+model DataPoint {
+  id         String      @id @default(uuid())
+  analysisId String
+  analysis   Analysis    @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  sourceId   String?
+  source     DataSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  name       String      // e.g. "precipitation_past_24h", "humidity", "surface_pressure"
+  value      Float
+  unit       String      // "mm", "°C", "%", "hPa"
+  quality    String      @default("HIGH") // HIGH, MODERATE, LOW
+  timestamp  DateTime    @default(now())
+
+  @@index([analysisId])
+  @@index([name])
+}
+
+model Conversation {
+  id         String    @id @default(uuid())
+  analysisId String?
+  analysis   Analysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+  title      String    @default("RiskLens Copilot Conversation")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  messages   Message[]
+
+  @@index([analysisId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String       // "user" | "assistant"
+  content        String
+  sources        String?      // JSON array of sources
+  dataUsed       String?      // JSON object of verified data snapshot
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+
