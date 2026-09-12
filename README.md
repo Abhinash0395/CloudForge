@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # RISKLENS AI — Predict. Understand. Decide.
 
 > **Hackathon Track**: Track 01 — AI, ML & Emerging Technologies  
@@ -199,3 +200,6 @@ npm run dev
 
 ## 📄 License
 MIT License. Created for Hackathon Track 01 (AI, ML & Emerging Technologies), Problem Statement 05 (AI for Prediction & Decision Support).
+=======
+# CloudForge
+>>>>>>> dbf71cab1b690611344a5081344f9cbc3aa115bf
